@@ -9,7 +9,7 @@
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: #e2e8f0; }
         
-        /* --- SHARED UTILS --- */
+        /* --- UTILS --- */
         .modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); backdrop-filter: blur(5px); align-items: center; justify-content: center; }
         .modal-content { background-color: #1e293b; padding: 2rem; border-radius: 1rem; max-width: 700px; width: 95%; max-height: 90vh; overflow-y: auto; border: 1px solid #334155; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); }
         .tab-btn { transition: all 0.2s; opacity: 0.5; border-bottom: 4px solid transparent; }
@@ -32,6 +32,7 @@
         .heat-low { border: 1px solid #475569; }
 
         .horse { width: 40px; height: 40px; border-radius: 8px; background-color: #be185d; color: white; display: flex; align-items: center; justify-content: center; font-weight: 800; cursor: grab; transition: all 0.2s; user-select: none; border: 2px solid #fbcfe8; z-index: 10; }
+        .horse:active { cursor: grabbing; transform: scale(1.1); }
         .horse:hover { transform: scale(1.1) rotate(3deg); background-color: #9d174d; }
         .track-slot { width: 50px; height: 60px; border: 2px dashed #64748b; border-radius: 8px; display: flex; align-items: center; justify-content: center; background-color: #334155; transition: background-color 0.2s; }
         .grid-slot { width: 45px; height: 45px; border: 1px solid #475569; border-radius: 6px; display: flex; align-items: center; justify-content: center; background-color: #1e293b; }
@@ -46,25 +47,55 @@
         .box-btn:hover:not(:disabled) { transform: translateY(-3px); border-color: #818cf8; }
         .quantum-active { animation: pulse-glow 3s infinite; }
         @keyframes pulse-glow { 0%, 100% { box-shadow: 0 0 10px rgba(99, 102, 241, 0.1); } 50% { box-shadow: 0 0 25px rgba(99, 102, 241, 0.3); } }
+
+        /* --- RIVER STYLES --- */
+        .person { width: 50px; height: 60px; border-radius: 8px; background-color: #059669; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; border: 2px solid #34d399; transition: all 0.2s; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+        .person:hover { transform: translateY(-3px); box-shadow: 0 6px 8px rgba(0,0,0,0.4); }
+        .river-container { position: relative; height: 220px; background: repeating-linear-gradient(45deg, #1e3a8a, #1e3a8a 10px, #172554 10px, #172554 20px); border-radius: 12px; border: 2px solid #3b82f6; overflow: hidden; display: flex; justify-content: space-between; }
+        .bank { width: 35%; background-color: #334155; border-right: 4px solid #475569; z-index: 5; display: grid; grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(3, 1fr); gap: 10px; padding: 15px; align-items: center; justify-items: center; }
+        .bank.right { border-right: none; border-left: 4px solid #475569; }
+        .boat { width: 140px; height: 70px; background-color: #7c2d12; border-radius: 0 0 50px 50px; border: 3px solid #b45309; position: absolute; bottom: 20px; transition: left 0.8s ease-in-out; display: flex; justify-content: center; items-start; gap: 10px; padding-top: 8px; z-index: 10; box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
+        .boat::after { content: "BOAT"; font-size: 10px; color: #fdba74; position: absolute; bottom: 5px; }
+        .shake-fail { animation: shake 0.4s ease-in-out; border: 2px solid #f43f5e; }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+
+        /* --- GRAPH STYLES --- */
+        #graph-canvas { background-color: #1e293b; border-radius: 12px; border: 2px solid #475569; cursor: crosshair; display: block; margin: 0 auto; }
     </style>
 </head>
 <body class="flex flex-col h-screen overflow-hidden">
 
     <!-- HEADER -->
     <header class="bg-slate-900 border-b border-slate-700 shadow-lg z-10">
-        <div class="max-w-6xl mx-auto px-4">
+        <div class="max-w-7xl mx-auto px-4">
             <div class="flex justify-between items-center h-16">
                 <div class="flex items-center space-x-2">
                     <span class="text-2xl">🧠</span>
                     <h1 class="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400 hidden sm:block">Dan's Logic Hub</h1>
+                    <button onclick="openModal('modal-settings')" class="text-slate-600 hover:text-slate-400 transition ml-2" title="Admin Settings">⚙️</button>
                 </div>
-                <nav class="flex space-x-1 overflow-x-auto">
-                    <button onclick="switchTab('jugs')" id="tab-jugs" class="tab-btn active px-3 py-5 text-xs sm:text-sm font-bold uppercase tracking-wide text-blue-400">💧 3 Jugs</button>
-                    <button onclick="switchTab('bulbs')" id="tab-bulbs" class="tab-btn px-3 py-5 text-xs sm:text-sm font-bold uppercase tracking-wide">💡 4 Switches</button>
-                    <button onclick="switchTab('cat')" id="tab-cat" class="tab-btn px-3 py-5 text-xs sm:text-sm font-bold uppercase tracking-wide">🐱 5 Boxes</button>
-                    <button onclick="switchTab('balls')" id="tab-balls" class="tab-btn px-3 py-5 text-xs sm:text-sm font-bold uppercase tracking-wide">⚖️ 12 Balls</button>
-                    <button onclick="switchTab('horses')" id="tab-horses" class="tab-btn px-3 py-5 text-xs sm:text-sm font-bold uppercase tracking-wide text-pink-400">🏇 25 Horses</button>
-                </nav>
+                <div class="flex items-center space-x-4">
+                     <nav class="flex space-x-1 overflow-x-auto hidden md:flex">
+                        <button onclick="switchTab('jugs')" id="tab-jugs" class="tab-btn active px-3 py-5 text-xs sm:text-sm font-bold uppercase tracking-wide text-blue-400">3 Jugs</button>
+                        <button onclick="switchTab('bulbs')" id="tab-bulbs" class="tab-btn px-3 py-5 text-xs sm:text-sm font-bold uppercase tracking-wide">4 Switches</button>
+                        <button onclick="switchTab('cat')" id="tab-cat" class="tab-btn px-3 py-5 text-xs sm:text-sm font-bold uppercase tracking-wide">5 Boxes</button>
+                        <button onclick="switchTab('river')" id="tab-river" class="tab-btn px-3 py-5 text-xs sm:text-sm font-bold uppercase tracking-wide text-emerald-400">5 People</button>
+                        <button onclick="switchTab('graph')" id="tab-graph" class="tab-btn px-3 py-5 text-xs sm:text-sm font-bold uppercase tracking-wide text-purple-400">13 Streets</button>
+                        <button onclick="switchTab('balls')" id="tab-balls" class="tab-btn px-3 py-5 text-xs sm:text-sm font-bold uppercase tracking-wide">12 Balls</button>
+                        <button onclick="switchTab('horses')" id="tab-horses" class="tab-btn px-3 py-5 text-xs sm:text-sm font-bold uppercase tracking-wide text-pink-400">25 Horses</button>
+                    </nav>
+                    <div id="user-status" class="text-sm font-bold text-slate-400 border-l border-slate-700 pl-4 cursor-pointer hover:text-white" onclick="openModal('modal-login')">Guest Mode</div>
+                </div>
+            </div>
+            <!-- Mobile Nav -->
+            <div class="md:hidden flex overflow-x-auto space-x-1 px-2 pb-2">
+                <button onclick="switchTab('jugs')" class="tab-btn active px-3 py-2 text-xs font-bold text-blue-400">3</button>
+                <button onclick="switchTab('bulbs')" class="tab-btn px-3 py-2 text-xs font-bold">4</button>
+                <button onclick="switchTab('cat')" class="tab-btn px-3 py-2 text-xs font-bold">5</button>
+                <button onclick="switchTab('river')" class="tab-btn px-3 py-2 text-xs font-bold text-emerald-400">5p</button>
+                <button onclick="switchTab('graph')" class="tab-btn px-3 py-2 text-xs font-bold text-purple-400">13s</button>
+                <button onclick="switchTab('balls')" class="tab-btn px-3 py-2 text-xs font-bold">12</button>
+                <button onclick="switchTab('horses')" class="tab-btn px-3 py-2 text-xs font-bold text-pink-400">25</button>
             </div>
         </div>
     </header>
@@ -79,7 +110,7 @@
                     <div class="flex justify-between items-start mb-6 border-b border-slate-700 pb-4">
                         <div>
                             <h2 class="text-3xl font-bold text-white">The Water Jug Riddle</h2>
-                            <p class="text-slate-300 mt-2 leading-relaxed max-w-2xl">You have three jugs with capacities of 8L, 5L, and 3L. The 8L jug starts completely full. The others are empty. You can pour water from one jug to another until the source is empty OR the destination is full. Measure exactly <strong class="text-blue-400">4 Liters</strong> in one of the jugs.</p>
+                            <p class="text-slate-300 mt-2 leading-relaxed max-w-2xl">You have three jugs with capacities of 8L, 5L, and 3L. The 8L jug starts completely full. The others are empty. You can pour water from one jug to another until the source is empty OR the destination is full. Measure exactly <strong class="text-blue-400">4 Litres</strong> in one of the jugs.</p>
                         </div>
                         <div class="flex space-x-2">
                             <button onclick="jugInit()" class="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded font-bold text-sm">Reset</button>
@@ -91,14 +122,11 @@
                         <div class="text-center"><div class="text-slate-400 font-bold mb-2">5L Jug</div><div id="jug-1" onclick="jugClick(1)" class="jug-container h-36 w-20 bg-slate-800 border-slate-500 relative hover:border-slate-300"><div id="water-1" class="jug-water h-0"></div><span id="label-1" class="absolute inset-0 flex items-center justify-center font-bold text-white drop-shadow-md z-10">0 / 5L</span></div></div>
                         <div class="text-center"><div class="text-slate-400 font-bold mb-2">3L Jug</div><div id="jug-2" onclick="jugClick(2)" class="jug-container h-24 w-16 bg-slate-800 border-slate-500 relative hover:border-slate-300"><div id="water-2" class="jug-water h-0"></div><span id="label-2" class="absolute inset-0 flex items-center justify-center font-bold text-white drop-shadow-md z-10">0 / 3L</span></div></div>
                     </div>
-                    <div class="bg-slate-900 p-4 rounded-xl border border-slate-700 flex justify-between items-center">
-                        <p id="jug-status" class="text-slate-300 font-mono text-lg">Select a jug to pour from.</p>
-                        <div class="text-right"><p class="text-xs text-slate-500 uppercase tracking-wide">Moves</p><p id="jug-moves" class="text-2xl font-bold text-indigo-400">0</p></div>
-                    </div>
+                    <div class="bg-slate-900 p-4 rounded-xl border border-slate-700 flex justify-between items-center"><p id="jug-status" class="text-slate-300 font-mono text-lg">Select a jug to pour from.</p><div class="text-right"><p class="text-xs text-slate-500 uppercase tracking-wide">Moves</p><p id="jug-moves" class="text-2xl font-bold text-indigo-400">0</p></div></div>
                 </div>
             </div>
 
-            <!-- 2. 4 SWITCHES (QUAD BULB) -->
+            <!-- 2. 4 SWITCHES -->
             <div id="game-bulbs" class="game-section hidden">
                 <div class="bg-slate-800 rounded-2xl p-6 border border-slate-700 shadow-xl">
                     <div class="flex justify-between items-start mb-6 border-b border-slate-700 pb-4">
@@ -111,34 +139,22 @@
                             <button onclick="openModal('modal-bulbs')" class="px-3 py-1 bg-amber-600 hover:bg-amber-500 text-white rounded font-bold text-sm">Hint</button>
                         </div>
                     </div>
-                    
                     <div id="bulb-phase-1" class="mb-8">
                         <div class="bg-slate-900 p-6 rounded-xl border border-slate-700 mb-6">
-                            <div class="flex justify-between items-center mb-6">
-                                <div class="text-slate-400 font-mono text-sm uppercase">Timer: <span id="bulb-timer" class="text-2xl text-white font-bold ml-2">00m</span></div>
-                                <button onclick="bulbWait()" class="px-6 py-3 bg-slate-700 hover:bg-slate-600 text-white font-bold rounded-lg border border-slate-500 flex items-center transition transform hover:scale-105">
-                                    <span>⏱️ Wait 10 Minutes</span>
-                                </button>
-                            </div>
+                            <div class="flex justify-between items-center mb-6"><div class="text-slate-400 font-mono text-sm uppercase">Timer: <span id="bulb-timer" class="text-2xl text-white font-bold ml-2">00m</span></div><button onclick="bulbWait()" class="px-6 py-3 bg-slate-700 hover:bg-slate-600 text-white font-bold rounded-lg border border-slate-500 flex items-center transition transform hover:scale-105"><span>⏱️ Wait 10 Minutes</span></button></div>
                             <div class="grid grid-cols-4 gap-8" id="bulb-switches-ui"></div>
                         </div>
                         <button onclick="bulbEnterRoom()" class="w-full py-4 bg-red-600 hover:bg-red-500 text-white font-bold text-xl rounded-xl shadow-lg transition">ENTER ROOM (Irreversible)</button>
                     </div>
-
                     <div id="bulb-phase-2" class="hidden">
                         <h3 class="text-2xl font-bold text-emerald-400 mb-4 text-center">🚪 Inside the Room</h3>
                         <div class="grid grid-cols-4 gap-4 mb-8" id="bulb-results"></div>
-                        <div class="bg-slate-900 p-6 rounded-xl border border-slate-700">
-                            <h4 class="font-bold text-amber-400 mb-4">Connection Report</h4>
-                            <div class="grid grid-cols-4 gap-2" id="bulb-guesses"></div>
-                            <button onclick="bulbCheck()" class="w-full mt-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl">Verify Connections</button>
-                            <p id="bulb-final-msg" class="text-center mt-4 font-bold text-lg"></p>
-                        </div>
+                        <div class="bg-slate-900 p-6 rounded-xl border border-slate-700"><h4 class="font-bold text-amber-400 mb-4">Connection Report</h4><div class="grid grid-cols-4 gap-2" id="bulb-guesses"></div><button onclick="bulbCheck()" class="w-full mt-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl">Verify Connections</button><p id="bulb-final-msg" class="text-center mt-4 font-bold text-lg"></p></div>
                     </div>
                 </div>
             </div>
 
-            <!-- 3. 5 BOXES (CAT) -->
+            <!-- 3. CAT -->
             <div id="game-cat" class="game-section hidden">
                 <div class="bg-slate-800 rounded-2xl p-6 border border-slate-700 shadow-xl">
                     <div class="flex justify-between items-start mb-6 border-b border-slate-700 pb-4">
@@ -151,45 +167,83 @@
                             <button onclick="openModal('modal-cat')" class="px-3 py-1 bg-amber-600 hover:bg-amber-500 text-white rounded font-bold text-sm">Hint</button>
                         </div>
                     </div>
-                    <div class="flex justify-between items-center mb-6 bg-slate-900 p-4 rounded-xl border border-slate-700">
-                        <h3 class="text-2xl font-bold text-indigo-400" id="cat-day-display">Day 1</h3>
-                        <p class="text-xl font-bold text-emerald-400" id="cat-possibilities">5 Spots</p>
-                    </div>
+                    <div class="flex justify-between items-center mb-6 bg-slate-900 p-4 rounded-xl border border-slate-700"><h3 class="text-2xl font-bold text-indigo-400" id="cat-day-display">Day 1</h3><p class="text-xl font-bold text-emerald-400" id="cat-possibilities">5 Spots</p></div>
                     <div class="grid grid-cols-5 gap-4 mb-8" id="cat-boxes"></div>
                     <div class="flex justify-center mb-8"><button id="cat-btn-giveup" onclick="catGiveUp()" class="px-6 py-3 bg-slate-700 hover:bg-slate-600 text-slate-300 font-bold rounded-xl border border-slate-600">🏳️ Give Up & Reveal Path</button></div>
                     <div class="bg-slate-900 rounded-xl border border-slate-700 p-4 h-64 overflow-y-auto" id="cat-logs"></div>
                 </div>
             </div>
 
-            <!-- 4. 12 BALLS -->
+            <!-- 4. RIVER -->
+            <div id="game-river" class="game-section hidden">
+                <div class="bg-slate-800 rounded-2xl p-6 border border-slate-700 shadow-xl">
+                    <div class="flex justify-between items-start mb-6 border-b border-slate-700 pb-4">
+                        <div>
+                            <h2 class="text-3xl font-bold text-white">River Crossing Riddle</h2>
+                            <p class="text-slate-300 mt-2 leading-relaxed max-w-2xl">5 people must cross a river. The boat holds max 2 people. Crossing times: <strong>1s, 3s, 6s, 8s, 12s</strong>. The boat speed is determined by the slowest person on board. The boat needs a driver to return. Can you get everyone across in <strong class="text-emerald-400">30 seconds or less</strong>?</p>
+                        </div>
+                        <div class="flex space-x-2">
+                            <button onclick="riverInit()" class="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded font-bold text-sm">Reset</button>
+                            <button onclick="openModal('modal-river')" class="px-3 py-1 bg-amber-600 hover:bg-amber-500 text-white rounded font-bold text-sm">Hint</button>
+                        </div>
+                    </div>
+                    <div id="river-game-area" class="bg-slate-900 p-6 rounded-xl border border-slate-700 mb-6 relative">
+                        <div class="river-container relative">
+                            <div id="river-bank-left" class="bank left-0"></div>
+                            <div id="river-bank-right" class="bank right right-0"></div>
+                            <div id="river-boat" class="boat" style="left: 35%;"></div>
+                        </div>
+                        <div class="flex justify-center mt-6 space-x-4">
+                            <button onclick="riverGo()" id="river-btn-go" class="px-8 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xl rounded-xl shadow-lg transition transform hover:scale-105">ROW BOAT</button>
+                            <button onclick="riverGiveUp()" id="river-btn-giveup" class="px-6 py-3 bg-slate-600 hover:bg-slate-500 text-white font-bold text-lg rounded-xl">Give Up</button>
+                        </div>
+                    </div>
+                    <div class="bg-slate-900 p-4 rounded-xl border border-slate-700 flex justify-between items-center"><p id="river-status" class="text-slate-300 font-mono text-lg">Load 1 or 2 people onto the boat.</p><div class="text-right"><p class="text-xs text-slate-500 uppercase tracking-wide">Time Elapsed</p><p id="river-time" class="text-3xl font-black text-emerald-400">0s</p></div></div>
+                    <div id="river-solution" class="hidden mt-4 bg-slate-900 p-4 rounded-xl border border-amber-500 text-slate-300 text-sm"></div>
+                </div>
+            </div>
+
+            <!-- 5. DELIVERY (GRAPH) -->
+            <div id="game-graph" class="game-section hidden">
+                <div class="bg-slate-800 rounded-2xl p-6 border border-slate-700 shadow-xl">
+                    <div class="flex justify-between items-start mb-6 border-b border-slate-700 pb-4">
+                        <div>
+                            <h2 class="text-3xl font-bold text-white">The Delivery Route</h2>
+                            <p class="text-slate-300 mt-2 leading-relaxed max-w-2xl">You are a delivery driver. You must drive through <strong>every single street (line)</strong> exactly once to minimise fuel consumption. You can start at any intersection (dot). Click dots to move. You can <strong>UNDO</strong> your last move by clicking the previous node. If you get stuck, you lose.</p>
+                        </div>
+                        <div class="flex space-x-2">
+                            <button onclick="graphInit()" class="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded font-bold text-sm">Reset</button>
+                            <button onclick="openModal('modal-graph')" class="px-3 py-1 bg-amber-600 hover:bg-amber-500 text-white rounded font-bold text-sm">Hint</button>
+                        </div>
+                    </div>
+                    <div class="flex justify-center mb-6 relative">
+                        <canvas id="graph-canvas" width="550" height="450"></canvas>
+                    </div>
+                    <div class="bg-slate-900 p-4 rounded-xl border border-slate-700 flex justify-between items-center">
+                        <p id="graph-status" class="text-slate-300 font-mono text-lg">Click a starting node (Yellow).</p>
+                        <div class="text-right"><p class="text-xs text-slate-500 uppercase tracking-wide">Streets Left</p><p id="graph-left" class="text-3xl font-black text-indigo-400">13</p></div>
+                    </div>
+                    <div class="flex justify-center mt-4">
+                        <button onclick="graphGiveUp()" class="px-6 py-3 bg-slate-700 hover:bg-slate-600 text-slate-300 font-bold rounded-xl border border-slate-600">🏳️ Give Up</button>
+                    </div>
+                    <div id="graph-solution" class="hidden mt-4 bg-slate-900 p-4 rounded-xl border border-amber-500 text-slate-300 text-sm text-center"></div>
+                </div>
+            </div>
+
+            <!-- 6. 12 BALLS -->
             <div id="game-balls" class="game-section hidden">
                 <div class="bg-slate-800 rounded-2xl p-6 border border-slate-700 shadow-xl">
                     <div class="flex justify-between items-start mb-6 border-b border-slate-700 pb-4">
                         <div>
                             <h2 class="text-3xl font-bold text-white">12 Balls Puzzle</h2>
-                            <p class="text-slate-300 mt-2 leading-relaxed max-w-2xl">You have 12 identical-looking balls. One is <strong>counterfeit</strong> and has a different weight (either heavier or lighter) than the others. You have a balance scale that tells you if the sides are equal or if one is heavier. You can use the scale exactly <strong class="text-red-400">3 times</strong>. Find the specific counterfeit ball and determine if it is heavy or light.</p>
+                            <p class="text-slate-300 mt-2 leading-relaxed max-w-2xl">You have 12 identical-looking balls. One is <strong>counterfeit</strong> (either heavier or lighter). You have a balance scale. You must identify the <strong class="text-emerald-400">specific ball number</strong> AND determine if it is <strong class="text-emerald-400">Heavy or Light</strong> using exactly <strong class="text-red-400">3 weighings</strong>. Guessing is not a strategy.</p>
                         </div>
-                        <div class="flex space-x-2">
-                            <button onclick="ballsInit()" class="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded font-bold text-sm">Reset</button>
-                            <button onclick="openModal('modal-balls')" class="px-3 py-1 bg-amber-600 hover:bg-amber-500 text-white rounded font-bold text-sm">Hint</button>
-                        </div>
+                        <div class="flex space-x-2"><button onclick="ballsInit()" class="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded font-bold text-sm">Reset</button><button onclick="openModal('modal-balls')" class="px-3 py-1 bg-amber-600 hover:bg-amber-500 text-white rounded font-bold text-sm">Hint</button></div>
                     </div>
                     <div class="bg-slate-900/50 rounded-xl p-6 mb-6 relative">
-                        <div class="flex justify-center space-x-8 mb-4">
-                            <div class="w-1/2">
-                                <p class="text-center text-xs text-slate-500 font-bold mb-1">LEFT (<span id="balls-left-count">0</span>)</p>
-                                <div id="balls-pan-left" class="pan"></div>
-                            </div>
-                            <div class="w-1/2">
-                                <p class="text-center text-xs text-slate-500 font-bold mb-1">RIGHT (<span id="balls-right-count">0</span>)</p>
-                                <div id="balls-pan-right" class="pan"></div>
-                            </div>
-                        </div>
+                        <div class="flex justify-center space-x-8 mb-4"><div class="w-1/2"><p class="text-center text-xs text-slate-500 font-bold mb-1">LEFT (<span id="balls-left-count">0</span>)</p><div id="balls-pan-left" class="pan"></div></div><div class="w-1/2"><p class="text-center text-xs text-slate-500 font-bold mb-1">RIGHT (<span id="balls-right-count">0</span>)</p><div id="balls-pan-right" class="pan"></div></div></div>
                         <div id="balls-result-box" class="scale-result bg-slate-700 text-center p-3 rounded-lg font-bold text-slate-200 mb-4 border border-slate-600"></div>
-                        <div class="flex justify-center space-x-4">
-                            <button id="balls-btn-weigh" onclick="ballsWeigh()" class="px-8 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl transition shadow-lg">WEIGH</button>
-                            <button onclick="ballsGiveUp()" class="px-6 py-3 bg-slate-600 hover:bg-slate-500 text-white font-bold rounded-xl">Give Up</button>
-                        </div>
+                        <div class="flex justify-center space-x-4"><button id="balls-btn-weigh" onclick="ballsWeigh()" class="px-8 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl transition shadow-lg">WEIGH</button><button onclick="ballsGiveUp()" class="px-6 py-3 bg-slate-600 hover:bg-slate-500 text-white font-bold rounded-xl">Give Up</button></div>
                         <p id="balls-weighs-left" class="absolute top-4 right-4 text-xl font-bold text-indigo-400">Left: 3</p>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -199,7 +253,7 @@
                 </div>
             </div>
 
-            <!-- 5. 25 HORSES -->
+            <!-- 7. 25 HORSES -->
             <div id="game-horses" class="game-section hidden">
                 <div class="bg-slate-800 rounded-2xl p-6 border border-slate-700 shadow-xl">
                     <div class="flex justify-between items-start mb-6 border-b border-slate-700 pb-4">
@@ -207,12 +261,8 @@
                             <h2 class="text-3xl font-bold text-white">The 25 Horses Puzzle</h2>
                             <p class="text-slate-300 mt-2 leading-relaxed max-w-2xl">There are 25 horses. You need to identify the fastest, second fastest, and third fastest horses. You have a race track that can race up to 5 horses at a time. There is <strong class="text-red-400">NO timer or stopwatch</strong>; you only see the relative finishing order of each race (1st, 2nd, 3rd...). What is the minimum number of races required to identify the Top 3 with certainty?</p>
                         </div>
-                        <div class="flex space-x-2">
-                            <button onclick="horseInit()" class="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded font-bold text-sm">Reset</button>
-                            <button onclick="openModal('modal-horses')" class="px-3 py-1 bg-amber-600 hover:bg-amber-500 text-white rounded font-bold text-sm">Hint</button>
-                        </div>
+                        <div class="flex space-x-2"><button onclick="horseInit()" class="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded font-bold text-sm">Reset</button><button onclick="openModal('modal-horses')" class="px-3 py-1 bg-amber-600 hover:bg-amber-500 text-white rounded font-bold text-sm">Hint</button></div>
                     </div>
-
                     <div class="flex flex-col lg:flex-row gap-6">
                         <div class="lg:w-1/2 space-y-6">
                             <div class="bg-slate-900/50 rounded-xl p-4 border border-slate-700 relative">
@@ -223,11 +273,7 @@
                             <div class="bg-slate-900 rounded-xl p-4 border border-slate-700"><h3 class="font-bold text-slate-400 mb-2 text-sm">Stable</h3><div id="horse-pool" class="flex flex-wrap gap-2 p-4 bg-slate-900 rounded-xl min-h-[150px]"></div></div>
                         </div>
                         <div class="lg:w-1/2 space-y-6">
-                            <div class="bg-slate-900 rounded-xl p-4 border border-slate-700">
-                                <h3 class="font-bold text-indigo-400 mb-2 text-sm uppercase tracking-wide">Strategy Board (Drag to Sort, Click to Return)</h3>
-                                <div class="grid grid-cols-6 gap-1 mb-2 text-xs text-slate-500 text-center font-mono"><div>GRP</div><div>1st</div><div>2nd</div><div>3rd</div><div>4th</div><div>5th</div></div>
-                                <div id="horse-grid" class="space-y-1"></div>
-                            </div>
+                            <div class="bg-slate-900 rounded-xl p-4 border border-slate-700"><h3 class="font-bold text-indigo-400 mb-2 text-sm uppercase tracking-wide">Strategy Board (Drag to Sort, Click to Return)</h3><div class="grid grid-cols-6 gap-1 mb-2 text-xs text-slate-500 text-center font-mono"><div>GRP</div><div>1st</div><div>2nd</div><div>3rd</div><div>4th</div><div>5th</div></div><div id="horse-grid" class="space-y-1"></div></div>
                             <div class="bg-slate-900 rounded-xl p-4 border border-slate-700 h-48 overflow-y-auto"><h3 class="font-bold text-slate-300 mb-2 text-sm sticky top-0 bg-slate-900 pb-1">Race Logs</h3><div id="horse-logs" class="space-y-2 text-sm"></div></div>
                             <div class="p-4 bg-indigo-900/30 border border-indigo-700 rounded-xl">
                                 <div class="flex space-x-2 mb-2"><input type="number" id="h-pred-1" placeholder="#1" class="bg-slate-900 border border-slate-600 rounded p-2 w-full text-white text-center"><input type="number" id="h-pred-2" placeholder="#2" class="bg-slate-900 border border-slate-600 rounded p-2 w-full text-white text-center"><input type="number" id="h-pred-3" placeholder="#3" class="bg-slate-900 border border-slate-600 rounded p-2 w-full text-white text-center"></div>
@@ -243,15 +289,70 @@
         </div>
     </main>
 
+    <!-- MODALS & SETTINGS -->
+    <div id="modal-login" class="modal" onclick="closeModal('modal-login')">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <h3 class="text-2xl font-bold text-white mb-4">Employee Login</h3>
+            <input type="text" id="login-id" placeholder="Enter Employee ID / Username" class="w-full p-3 bg-slate-800 border border-slate-600 rounded-lg text-white mb-4">
+            <button onclick="handleLogin()" class="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-lg">Login</button>
+            <button onclick="handleLogout()" class="w-full py-2 mt-2 bg-slate-700 hover:bg-slate-600 text-slate-400 font-bold rounded-lg">Logout / Guest Mode</button>
+        </div>
+    </div>
+
+    <div id="modal-settings" class="modal" onclick="closeModal('modal-settings')">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <h3 class="text-2xl font-bold text-white mb-4">Admin Settings</h3>
+            <p class="text-slate-400 text-sm mb-2">Paste your Google Apps Script Web App URL here to enable cloud logging.</p>
+            <input type="text" id="api-url" placeholder="https://script.google.com/macros/s/.../exec" class="w-full p-3 bg-slate-800 border border-slate-600 rounded-lg text-white mb-4 text-xs">
+            <button onclick="saveSettings()" class="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg">Save Configuration</button>
+        </div>
+    </div>
+
     <!-- HINTS -->
-    <div id="modal-jugs" class="modal" onclick="closeModal('modal-jugs')"><div class="modal-content"><h3 class="text-xl font-bold text-amber-500 mb-2">Hint: 3 Jugs</h3><p class="text-slate-300">Focus on creating a 1-Liter difference. Can you get exactly 1L in a jug? If you have 5L and pour into a 3L jug, what is left?</p><button onclick="closeModal('modal-jugs')" class="mt-4 w-full py-2 bg-slate-700 text-white rounded">Close</button></div></div>
+    <div id="modal-jugs" class="modal" onclick="closeModal('modal-jugs')"><div class="modal-content"><h3 class="text-xl font-bold text-amber-500 mb-2">Hint: 3 Jugs</h3><p class="text-slate-300">Focus on creating a 1-Litre difference. Can you get exactly 1L in a jug? If you have 5L and pour into a 3L jug, what is left?</p><button onclick="closeModal('modal-jugs')" class="mt-4 w-full py-2 bg-slate-700 text-white rounded">Close</button></div></div>
     <div id="modal-bulbs" class="modal" onclick="closeModal('modal-bulbs')"><div class="modal-content"><h3 class="text-xl font-bold text-amber-500 mb-2">Hint: Quad-Bulb</h3><p class="text-slate-300">You need 4 states for 4 bulbs. State 1: ON. State 2: OFF. State 3: ...? <br>Use the "Wait" button. Heat accumulates. A bulb that was ON for 20 mins is hotter than one ON for 2 mins. Create 4 distinct heat signatures (Hot, Warm, Cold, Lit).</p><button onclick="closeModal('modal-bulbs')" class="mt-4 w-full py-2 bg-slate-700 text-white rounded">Close</button></div></div>
-    <div id="modal-cat" class="modal" onclick="closeModal('modal-cat')"><div class="modal-content"><h3 class="text-xl font-bold text-amber-500 mb-2">Hint: Quantum Cat</h3><p class="text-slate-300">The board is a checkerboard (Black/White). The cat MUST swap colors every move. If you assume it started on White (Even), you can sweep those. If you miss, it must have started on Black (Odd)... but after 3 days, its color has flipped. It's effectively on White relative to the board now.</p><button onclick="closeModal('modal-cat')" class="mt-4 w-full py-2 bg-slate-700 text-white rounded">Close</button></div></div>
+    <div id="modal-cat" class="modal" onclick="closeModal('modal-cat')"><div class="modal-content"><h3 class="text-xl font-bold text-amber-500 mb-2">Hint: Quantum Cat</h3><p class="text-slate-300">The board is a checkerboard (Black/White). The cat MUST swap colours every move. If you assume it started on White (Even), you can sweep those. If you miss, it must have started on Black (Odd)... but after 3 days, its colour has flipped. It's effectively on White relative to the board now.</p><button onclick="closeModal('modal-cat')" class="mt-4 w-full py-2 bg-slate-700 text-white rounded">Close</button></div></div>
     <div id="modal-balls" class="modal" onclick="closeModal('modal-balls')"><div class="modal-content"><h3 class="text-xl font-bold text-amber-500 mb-2">Hint: 12 Balls</h3><p class="text-slate-300">Start 4 vs 4. If balanced, the issue is in the unweighed 4. If unbalanced, you have 8 suspects. Mix them up in weighing 2 to isolate the change.</p><button onclick="closeModal('modal-balls')" class="mt-4 w-full py-2 bg-slate-700 text-white rounded">Close</button></div></div>
     <div id="modal-horses" class="modal" onclick="closeModal('modal-horses')"><div class="modal-content"><h3 class="text-xl font-bold text-amber-500 mb-2">Hint: 25 Horses</h3><p class="text-slate-300">Don't try to find who IS fast. Find who IS NOT.<br>1. Race all groups (5 races).<br>2. Race the winners (Race 6).<br>3. The winner of Race 6 is the fastest overall.<br>4. Look at the grid. If a horse lost to someone who lost to someone else... can they be Top 3?</p><button onclick="closeModal('modal-horses')" class="mt-4 w-full py-2 bg-slate-700 text-white rounded">Close</button></div></div>
+    <div id="modal-river" class="modal" onclick="closeModal('modal-river')"><div class="modal-content"><h3 class="text-xl font-bold text-amber-500 mb-2">Hint: River Crossing</h3><p class="text-slate-300">Don't make the fastest person (1s) do all the work. If 1 takes 12 across, they waste 12s. You need to move the two slowest people (8s and 12s) <strong>together</strong> so their time overlaps. But how do you get the boat back?</p><button onclick="closeModal('modal-river')" class="mt-4 w-full py-2 bg-slate-700 text-white rounded">Close</button></div></div>
+    <div id="modal-graph" class="modal" onclick="closeModal('modal-graph')"><div class="modal-content"><h3 class="text-xl font-bold text-amber-500 mb-2">Hint: Delivery</h3><p class="text-slate-300">Count the number of lines connected to each node (The Degree). In Graph Theory, to traverse every line exactly once, you must start at a node with an <strong>ODD</strong> number of connections.</p><button onclick="closeModal('modal-graph')" class="mt-4 w-full py-2 bg-slate-700 text-white rounded">Close</button></div></div>
 
     <script>
-        // UTILS
+        // --- SYSTEM: UTILS & DATA ---
+        let currentUser = localStorage.getItem('logic_user') || null;
+        let apiUrl = localStorage.getItem('logic_api_url') || "";
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            updateAuthUI();
+            jugInit(); bulbInit(); catInit(); riverInit(); graphInit(); ballsInit(); horseInit();
+        });
+
+        function updateAuthUI() {
+            const statusEl = document.getElementById('user-status');
+            if(currentUser) {
+                statusEl.innerText = `User: ${currentUser}`;
+                statusEl.className = "text-sm font-bold text-emerald-400 border-l border-slate-700 pl-4 cursor-pointer hover:text-white";
+            } else {
+                statusEl.innerText = "Guest Mode (Login)";
+                statusEl.className = "text-sm font-bold text-slate-400 border-l border-slate-700 pl-4 cursor-pointer hover:text-white";
+            }
+            document.getElementById('api-url').value = apiUrl;
+        }
+        function handleLogin() {
+            const id = document.getElementById('login-id').value;
+            if(id) { currentUser = id; localStorage.setItem('logic_user', id); updateAuthUI(); closeModal('modal-login'); }
+        }
+        function handleLogout() { currentUser = null; localStorage.removeItem('logic_user'); updateAuthUI(); closeModal('modal-login'); }
+        function saveSettings() {
+            const url = document.getElementById('api-url').value;
+            apiUrl = url; localStorage.setItem('logic_api_url', url); closeModal('modal-settings'); alert("Settings Saved!");
+        }
+        function sendData(puzzle, result, metric, optimal) {
+            if(!currentUser || !apiUrl) return;
+            const data = { user: currentUser, puzzle: puzzle, result: result, metric: metric, optimal: optimal };
+            fetch(apiUrl, { method: 'POST', mode: 'no-cors', body: JSON.stringify(data), headers: { 'Content-Type': 'application/json' } })
+            .then(() => console.log("Data Sent")).catch(e => console.error("Log Error", e));
+        }
         function switchTab(id){ document.querySelectorAll('.game-section').forEach(e=>e.classList.add('hidden')); document.getElementById(`game-${id}`).classList.remove('hidden'); document.querySelectorAll('.tab-btn').forEach(e=>e.classList.remove('active')); document.getElementById(`tab-${id}`).classList.add('active'); }
         function openModal(id){document.getElementById(id).style.display='flex'} function closeModal(id){document.getElementById(id).style.display='none'}
         function playSound(f,t='sine'){const c=new(window.AudioContext||window.webkitAudioContext)();const o=c.createOscillator();const g=c.createGain();o.connect(g);g.connect(c.destination);o.type=t;o.frequency.setValueAtTime(f,c.currentTime);g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+0.1);o.start();o.stop(c.currentTime+0.1)}
@@ -260,7 +361,7 @@
         let jugState = { jugs:[8,0,0], caps:[8,5,3], selected:null, solved:false, moves:0 };
         function jugInit(){
             jugState.jugs=[8,0,0]; jugState.selected=null; jugState.solved=false; jugState.moves=0;
-            document.getElementById('jug-status').innerText = "Select a jug to start pouring.";
+            document.getElementById('jug-status').innerText = "Select a jug to pour from.";
             document.getElementById('jug-status').className = "text-slate-300 font-mono text-lg";
             document.getElementById('jug-moves').innerText = "0";
             jugRender();
@@ -313,57 +414,177 @@
         function jugCheck(){
             if(jugState.jugs.includes(4)){
                 jugState.solved = true;
-                const msg = jugState.moves === 6 ? "PERFECT! 6 Moves (Optimal)." : `SUCCESS! solved in ${jugState.moves} moves.`;
+                const msg = jugState.moves === 6 ? "PERFECT! 6 Moves (Optimised)." : `SUCCESS! Solved in ${jugState.moves} moves.`;
                 document.getElementById('jug-status').innerText = msg;
                 document.getElementById('jug-status').className = "text-emerald-400 font-bold text-xl animate-bounce";
                 playSound(600);
+                sendData('3 Jugs', 'Win', jugState.moves, jugState.moves===6);
             }
         }
 
         /* --- GAME 2: BULBS --- */
         let bulbState={map:{},switches:{},over:false,entered:false,time:0};const bulbNames=['A','B','C','D'];function bulbInit(){bulbState.map={1:null,2:null,3:null,4:null};let s=['A','B','C','D'].sort(()=>Math.random()-0.5);[1,2,3,4].forEach((n,i)=>bulbState.map[n]=s[i]);bulbState.switches={A:{on:false,heat:0},B:{on:false,heat:0},C:{on:false,heat:0},D:{on:false,heat:0}};bulbState.over=false;bulbState.entered=false;bulbState.time=0;document.getElementById('bulb-phase-1').classList.remove('hidden');document.getElementById('bulb-phase-2').classList.add('hidden');document.getElementById('bulb-final-msg').innerText="";document.getElementById('bulb-timer').innerText="00m";bulbRenderSwitches()}function bulbToggle(id){const s=bulbState.switches[id];s.on=!s.on;bulbRenderSwitches();playSound(300,'square')}
-        function bulbWait(){
-            bulbState.time+=10;
-            document.getElementById('bulb-timer').innerText=bulbState.time+"m";
-            bulbNames.forEach(id=>{
-                if(bulbState.switches[id].on) bulbState.switches[id].heat += 10; 
-            });
-            playSound(200,'sine');
-            const el = document.getElementById('bulb-switches-ui');
-            el.style.opacity=0.5; setTimeout(()=>el.style.opacity=1, 200);
-        }
-        function bulbRenderSwitches(){const c=document.getElementById('bulb-switches-ui');c.innerHTML='';bulbNames.forEach(id=>{const s=bulbState.switches[id];const bg=s.on?"bg-emerald-900/50 border-emerald-500":"bg-slate-900 border-slate-700";const txt=s.on?"text-emerald-400":"text-slate-500";c.innerHTML+=`<div class="${bg} p-4 rounded-xl border flex flex-col items-center transition-colors duration-200"><span class="text-3xl font-bold text-slate-300 mb-2">${id}</span><button onclick="bulbToggle('${id}')" class="w-full py-2 rounded-lg font-bold text-white ${s.on?'bg-emerald-600':'bg-slate-600'}">${s.on?'ON':'OFF'}</button></div>`})}function bulbEnterRoom(){bulbState.entered=true;document.getElementById('bulb-phase-1').classList.add('hidden');document.getElementById('bulb-phase-2').classList.remove('hidden');const r=document.getElementById('bulb-results');const g=document.getElementById('bulb-guesses');r.innerHTML='';g.innerHTML='';[1,2,3,4].forEach(n=>{const sid=bulbState.map[n];const s=bulbState.switches[sid];let cls="bulb-off",txt="OFF",tCls="heat-low",tTxt="COLD";if(s.on){cls="bulb-on";txt="ON"}if(s.heat>=15){tCls="heat-high";tTxt="HOT"}else if(s.heat>0){tCls="heat-med";tTxt="WARM"}r.innerHTML+=`<div class="bg-slate-800 p-4 rounded-xl border border-slate-600 flex flex-col items-center ${cls} ${tCls} transition-all"><span class="text-xl font-bold mb-2">Bulb ${n}</span><span class="text-2xl font-black mb-1">${txt}</span><span class="text-xs font-bold opacity-75">${tTxt}</span></div>`;g.innerHTML+=`<div class="flex items-center justify-between bg-slate-800 p-2 rounded border border-slate-600"><span class="font-bold text-slate-400 mr-2">B${n}:</span><select id="bulb-guess-${n}" class="bg-slate-900 text-white p-1 rounded w-full"><option value="">?</option><option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option></select></div>`})}function bulbCheck(){let c=0;[1,2,3,4].forEach(n=>{if(document.getElementById(`bulb-guess-${n}`).value===bulbState.map[n])c++});const m=document.getElementById('bulb-final-msg');if(c===4){m.className="text-emerald-400 mt-4 text-center font-bold text-xl";m.innerText="VICTORY!"}else{m.className="text-rose-400 mt-4 text-center font-bold";m.innerText=`Incorrect. ${c}/4 right.`}}
+        function bulbWait(){bulbState.time+=10;document.getElementById('bulb-timer').innerText=bulbState.time+"m";bulbNames.forEach(id=>{if(bulbState.switches[id].on)bulbState.switches[id].heat+=10});playSound(200,'sine');const el=document.getElementById('bulb-switches-ui');el.style.opacity=0.5;setTimeout(()=>el.style.opacity=1,200)}
+        function bulbRenderSwitches(){const c=document.getElementById('bulb-switches-ui');c.innerHTML='';bulbNames.forEach(id=>{const s=bulbState.switches[id];const bg=s.on?"bg-emerald-900/50 border-emerald-500":"bg-slate-900 border-slate-700";const txt=s.on?"text-emerald-400":"text-slate-500";c.innerHTML+=`<div class="${bg} p-4 rounded-xl border flex flex-col items-center transition-colors duration-200"><span class="text-3xl font-bold text-slate-300 mb-2">${id}</span><button onclick="bulbToggle('${id}')" class="w-full py-2 rounded-lg font-bold text-white ${s.on?'bg-emerald-600':'bg-slate-600'}">${s.on?'ON':'OFF'}</button></div>`})}function bulbEnterRoom(){bulbState.entered=true;document.getElementById('bulb-phase-1').classList.add('hidden');document.getElementById('bulb-phase-2').classList.remove('hidden');const r=document.getElementById('bulb-results');const g=document.getElementById('bulb-guesses');r.innerHTML='';g.innerHTML='';[1,2,3,4].forEach(n=>{const sid=bulbState.map[n];const s=bulbState.switches[sid];let cls="bulb-off",txt="OFF",tCls="heat-low",tTxt="COLD";if(s.on){cls="bulb-on";txt="ON"}if(s.heat>=15){tCls="heat-high";tTxt="HOT"}else if(s.heat>0){tCls="heat-med";tTxt="WARM"}r.innerHTML+=`<div class="bg-slate-800 p-4 rounded-xl border border-slate-600 flex flex-col items-center ${cls} ${tCls} transition-all"><span class="text-xl font-bold mb-2">Bulb ${n}</span><span class="text-2xl font-black mb-1">${txt}</span><span class="text-xs font-bold opacity-75">${tTxt}</span></div>`;g.innerHTML+=`<div class="flex items-center justify-between bg-slate-800 p-2 rounded border border-slate-600"><span class="font-bold text-slate-400 mr-2">B${n}:</span><select id="bulb-guess-${n}" class="bg-slate-900 text-white p-1 rounded w-full"><option value="">?</option><option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option></select></div>`})}function bulbCheck(){let c=0;[1,2,3,4].forEach(n=>{if(document.getElementById(`bulb-guess-${n}`).value===bulbState.map[n])c++});const m=document.getElementById('bulb-final-msg');if(c===4){m.className="text-emerald-400 mt-4 text-center font-bold text-xl";m.innerText="VICTORY!";sendData('4 Switches', 'Win', '-', true);}else{m.className="text-rose-400 mt-4 text-center font-bold";m.innerText=`Incorrect. ${c}/4 right.`;sendData('4 Switches', 'Fail', c+'/4', false);}}
 
         /* --- GAME 3: CAT --- */
-        const catState={day:1,pos:new Set([1,2,3,4,5]),history:[],over:false};function catInit(){catState.day=1;catState.pos=new Set([1,2,3,4,5]);catState.history=[new Set([1,2,3,4,5])];catState.over=false;document.getElementById('cat-logs').innerHTML='';catRender()}function catRender(){document.getElementById('cat-day-display').innerText=`Day ${catState.day}`;document.getElementById('cat-possibilities').innerText=`${catState.pos.size} Spots`;const c=document.getElementById('cat-boxes');c.innerHTML='';for(let i=1;i<=5;i++){const b=document.createElement('button');b.className=`box-btn h-24 bg-slate-800 rounded-xl border-2 border-slate-600 flex items-center justify-center text-3xl font-black text-slate-600 group hover:border-indigo-500 hover:text-indigo-400 quantum-active`;b.innerText=i;b.onclick=()=>catCheck(i);if(catState.over)b.disabled=true;c.appendChild(b)}}function catCheck(id){if(catState.over)return;let caught=false;if(catState.pos.has(id)){if(catState.pos.size===1)caught=true;else catState.pos.delete(id)}const l=document.getElementById('cat-logs');const e=document.createElement('div');e.className=`p-3 mb-2 border-l-4 rounded bg-slate-800 ${caught?'border-emerald-500':'border-rose-500'}`;e.innerHTML=`<div class="flex justify-between text-sm text-slate-300"><span>Day ${catState.day}</span><span class="${caught?'text-emerald-400':'text-rose-400'} font-bold">${caught?'CAUGHT':'MISSED'}</span></div><div class="text-xs text-slate-500">Checked Box ${id}.</div>`;l.prepend(e);if(caught){catState.over=true;document.getElementById('cat-boxes').children[id-1].classList.add('bg-emerald-900','border-emerald-500','text-emerald-400');playSound(600);catRevealPath(id)}else{playSound(150,'sawtooth');const next=new Set();catState.pos.forEach(p=>{if(p>1)next.add(p-1);if(p<5)next.add(p+1)});catState.pos=next;catState.history.push(new Set(next));catState.day++;catRender()}}function catGiveUp(){if(catState.over)return;catState.over=true;const arr=Array.from(catState.pos);const final=arr.length?arr[Math.floor(Math.random()*arr.length)]:1;catRevealPath(final);document.getElementById('cat-boxes').children[final-1].classList.add('bg-amber-900','border-amber-500','text-amber-400')}function catRevealPath(end){let p=[end],c=end;for(let d=catState.history.length-2;d>=0;d--){const prev=catState.history[d];const cands=[];if(prev.has(c-1))cands.push(c-1);if(prev.has(c+1))cands.push(c+1);c=cands[Math.floor(Math.random()*cands.length)];p.unshift(c)}const d=document.createElement('div');d.className="mt-4 p-3 bg-slate-700 rounded border border-slate-600";d.innerHTML=`<div class="text-xs text-indigo-300 font-bold uppercase mb-2">Quantum Path</div><div class="flex flex-wrap gap-2 text-sm font-mono text-white">${p.join(' → ')}</div>`;document.getElementById('cat-logs').prepend(d)}
+        const catState={day:1,pos:new Set([1,2,3,4,5]),history:[],over:false};function catInit(){catState.day=1;catState.pos=new Set([1,2,3,4,5]);catState.history=[new Set([1,2,3,4,5])];catState.over=false;document.getElementById('cat-logs').innerHTML='';catRender()}function catRender(){document.getElementById('cat-day-display').innerText=`Day ${catState.day}`;document.getElementById('cat-possibilities').innerText=`${catState.pos.size} Spots`;const c=document.getElementById('cat-boxes');c.innerHTML='';for(let i=1;i<=5;i++){const b=document.createElement('button');b.className=`box-btn h-24 bg-slate-800 rounded-xl border-2 border-slate-600 flex items-center justify-center text-3xl font-black text-slate-600 group hover:border-indigo-500 hover:text-indigo-400 quantum-active`;b.innerText=i;b.onclick=()=>catCheck(i);if(catState.over)b.disabled=true;c.appendChild(b)}}function catCheck(id){if(catState.over)return;let caught=false;if(catState.pos.has(id)){if(catState.pos.size===1)caught=true;else catState.pos.delete(id)}const l=document.getElementById('cat-logs');const e=document.createElement('div');e.className=`p-3 mb-2 border-l-4 rounded bg-slate-800 ${caught?'border-emerald-500':'border-rose-500'}`;e.innerHTML=`<div class="flex justify-between text-sm text-slate-300"><span>Day ${catState.day}</span><span class="${caught?'text-emerald-400':'text-rose-400'} font-bold">${caught?'CAUGHT':'MISSED'}</span></div><div class="text-xs text-slate-500">Checked Box ${id}.</div>`;l.prepend(e);if(caught){catState.over=true;document.getElementById('cat-boxes').children[id-1].classList.add('bg-emerald-900','border-emerald-500','text-emerald-400');playSound(600);catRevealPath(id);sendData('5 Boxes', 'Win', `Day ${catState.day}`, true);}else{playSound(150,'sawtooth');const next=new Set();catState.pos.forEach(p=>{if(p>1)next.add(p-1);if(p<5)next.add(p+1)});catState.pos=next;catState.history.push(new Set(next));catState.day++;catRender()}}function catGiveUp(){if(catState.over)return;catState.over=true;const arr=Array.from(catState.pos);const final=arr.length?arr[Math.floor(Math.random()*arr.length)]:1;catRevealPath(final);document.getElementById('cat-boxes').children[final-1].classList.add('bg-amber-900','border-amber-500','text-amber-400');sendData('5 Boxes', 'GiveUp', `Day ${catState.day}`, false);}function catRevealPath(end){let p=[end],c=end;for(let d=catState.history.length-2;d>=0;d--){const prev=catState.history[d];const cands=[];if(prev.has(c-1))cands.push(c-1);if(prev.has(c+1))cands.push(c+1);c=cands[Math.floor(Math.random()*cands.length)];p.unshift(c)}const d=document.createElement('div');d.className="mt-4 p-3 bg-slate-700 rounded border border-slate-600";d.innerHTML=`<div class="text-xs text-indigo-300 font-bold uppercase mb-2">Quantum Path</div><div class="flex flex-wrap gap-2 text-sm font-mono text-white">${p.join(' → ')}</div>`;document.getElementById('cat-logs').prepend(d)}
 
-        /* --- GAME 4: BALLS --- */
-        const ballsState={available:[],left:[],right:[],limit:3,cf:null,weighing:false,over:false};function ballsInit(){ballsState.available=Array.from({length:12},(_,i)=>({id:i+1}));ballsState.left=[];ballsState.right=[];ballsState.limit=3;ballsState.weighing=false;ballsState.over=false;ballsState.cf={id:Math.floor(Math.random()*12)+1,status:Math.random()>0.5?'Heavy':'Light'};document.getElementById('balls-logs').innerHTML='';document.getElementById('balls-result-box').className="scale-result bg-slate-700 text-center p-3 rounded-lg font-bold text-slate-200 mb-4 border border-slate-600";document.getElementById('balls-result-box').innerText="Place equal balls to weigh.";document.getElementById('balls-guess-id').innerHTML='<option value="">Ball #</option>'+Array.from({length:12},(_,i)=>`<option value="${i+1}">${i+1}</option>`).join('');document.getElementById('balls-guess-status').value="";ballsRender()}function ballsMove(id){if(ballsState.weighing||ballsState.over)return;let p=ballsState.available,l=ballsState.left,r=ballsState.right;let idx=p.findIndex(b=>b.id===id);if(idx>-1){l.push(p.splice(idx,1)[0]);playSound(200);ballsRender();return}idx=l.findIndex(b=>b.id===id);if(idx>-1){r.push(l.splice(idx,1)[0]);playSound(200);ballsRender();return}idx=r.findIndex(b=>b.id===id);if(idx>-1){p.push(r.splice(idx,1)[0]);playSound(200);ballsRender();return}}function ballsRender(){const d=(arr,el)=>{el.innerHTML=arr.sort((a,b)=>a.id-b.id).map(b=>`<div class="ball" onclick="ballsMove(${b.id})">${b.id}</div>`).join('')};d(ballsState.available,document.getElementById('balls-pool'));d(ballsState.left,document.getElementById('balls-pan-left'));d(ballsState.right,document.getElementById('balls-pan-right'));document.getElementById('balls-left-count').innerText=ballsState.left.length;document.getElementById('balls-right-count').innerText=ballsState.right.length;document.getElementById('balls-weighs-left').innerText=`Left: ${ballsState.limit}`;document.getElementById('balls-btn-weigh').disabled=ballsState.limit===0||ballsState.left.length!==ballsState.right.length||ballsState.left.length===0||ballsState.weighing||ballsState.over}function ballsWeigh(){if(ballsState.limit<=0)return;ballsState.weighing=true;ballsState.limit--;ballsRender();const b=document.getElementById('balls-result-box');b.className="scale-result bg-indigo-900 text-indigo-200 p-3 rounded-lg font-bold border border-indigo-500";b.innerText="Weighing...";let li=ballsState.left.map(x=>x.id),ri=ballsState.right.map(x=>x.id);let res="Balanced",cls="";if(li.includes(ballsState.cf.id))res=ballsState.cf.status==="Heavy"?"Left Heavy":"Right Heavy";else if(ri.includes(ballsState.cf.id))res=ballsState.cf.status==="Heavy"?"Right Heavy":"Left Heavy";if(res.includes("Left"))cls="left-heavy bg-rose-900/50 text-rose-200 border-rose-500";else if(res.includes("Right"))cls="right-heavy bg-rose-900/50 text-rose-200 border-rose-500";else cls="bg-emerald-900/50 text-emerald-200 border-emerald-500";setTimeout(()=>{b.className=`scale-result p-3 rounded-lg font-bold border-2 ${cls}`;b.innerText=res.toUpperCase();playSound(res==="Balanced"?400:200,res==="Balanced"?'sine':'sawtooth');ballsLog(li,ri,res)},800);setTimeout(()=>{ballsState.available.push(...ballsState.left,...ballsState.right);ballsState.left=[];ballsState.right=[];ballsState.weighing=false;ballsRender();b.className="scale-result bg-slate-700 text-center p-3 rounded-lg font-bold text-slate-200 mb-4 border border-slate-600";b.innerText="Place equal balls to weigh."},3500)}function ballsLog(l,r,res){const d=document.createElement('div');d.className="p-3 mb-2 rounded bg-slate-800 border-l-4 "+(res.includes("Balanced")?"border-emerald-500":"border-rose-500");d.innerHTML=`<div class="flex justify-between font-bold text-xs text-slate-400"><span>Weighing ${3-ballsState.limit}</span><span>${res}</span></div><div class="text-sm text-slate-200 mt-1">L:[${l}] vs R:[${r}]</div>`;document.getElementById('balls-logs').prepend(d)}function ballsCheck(){const i=parseInt(document.getElementById('balls-guess-id').value);const s=document.getElementById('balls-guess-status').value;if(!i||!s)return alert("Pick Ball & Status");ballsState.over=true;ballsRender();const w=(i===ballsState.cf.id&&s===ballsState.cf.status);const b=document.getElementById('balls-result-box');b.className=w?"scale-result bg-emerald-600 text-white p-4 rounded-xl font-bold text-xl":"scale-result bg-red-600 text-white p-4 rounded-xl font-bold text-xl";b.innerHTML=w?"VICTORY!":"WRONG.";playSound(w?600:100,w?'sine':'sawtooth')}
-        function ballsGiveUp(){ballsState.over=true;ballsRender();const b=document.getElementById('balls-result-box');b.className="scale-result bg-slate-600 text-white p-4 rounded-xl font-bold";b.innerHTML=`Gave Up. Counterfeit: Ball ${ballsState.cf.id} (${ballsState.cf.status})`;}
+        /* --- GAME 4: RIVER --- */
+        let riverState = { left:[1,3,6,8,12], right:[], boat:[], side:'left', time:0, solved:false, fail:false };
+        function riverInit(){ riverState = { left:[1,3,6,8,12], right:[], boat:[], side:'left', time:0, solved:false, fail:false }; document.getElementById('river-time').innerText = "0s"; document.getElementById('river-status').innerText = "Load 1 or 2 people onto the boat."; document.getElementById('river-status').className = "text-slate-300 font-mono text-lg"; document.getElementById('river-game-area').classList.remove('shake-fail'); document.getElementById('river-solution').classList.add('hidden'); riverRender(); }
+        function riverClick(val, loc) { if(riverState.solved || riverState.fail) return; if(loc === 'boat') { const idx = riverState.boat.indexOf(val); if(idx>-1) { riverState.boat.splice(idx,1); riverState[riverState.side].push(val); playSound(200); } } else { if(loc !== riverState.side) return alert("Boat is on the other side!"); if(riverState.boat.length >= 2) return alert("Boat full!"); const idx = riverState[loc].indexOf(val); if(idx>-1) { riverState[loc].splice(idx,1); riverState.boat.push(val); playSound(200); } } riverRender(); riverCheck(); }
+        function riverGo(){ if(riverState.solved || riverState.fail) return; if(riverState.boat.length === 0) return alert("Boat is empty!"); const tripTime = Math.max(...riverState.boat); riverState.time += tripTime; riverState.side = riverState.side === 'left' ? 'right' : 'left'; document.getElementById('river-time').innerText = riverState.time + "s"; if(riverState.time > 30) { riverState.fail = true; document.getElementById('river-status').innerText = "GAME OVER! Too Slow (>30s). Resetting..."; document.getElementById('river-status').className = "text-rose-500 font-bold text-xl"; document.getElementById('river-game-area').classList.add('shake-fail'); playSound(100, 'sawtooth'); sendData('River', 'Fail', riverState.time, false); setTimeout(riverInit, 2500); } else { playSound(100,'triangle'); riverCheck(); } riverRender(); }
+        function riverRender(){ const l=document.getElementById('river-bank-left'); const r=document.getElementById('river-bank-right'); const b=document.getElementById('river-boat'); const draw = (arr, el, loc) => { el.innerHTML = arr.sort((a,b)=>a-b).map(p => `<div onclick="riverClick(${p}, '${loc}')" class="person"><span class="text-2xl">👤</span><span class="person-time">${p}s</span></div>`).join(''); }; draw(riverState.left, l, 'left'); draw(riverState.right, r, 'right'); draw(riverState.boat, b, 'boat'); b.style.left = riverState.side === 'left' ? '35%' : 'calc(100% - 35% - 140px)'; }
+        function riverCheck(){ if(riverState.right.length === 5 && riverState.boat.length === 0) { if(riverState.time <= 30) { riverState.solved = true; const msg = document.getElementById('river-status'); msg.innerText = `VICTORY! Solved in ${riverState.time}s (Optimal is 29s).`; msg.className = "text-emerald-400 font-bold text-xl animate-bounce"; playSound(600); sendData('River', 'Win', riverState.time, riverState.time<=29); } } }
+        function riverGiveUp() { riverState.fail = true; const sol = document.getElementById('river-solution'); sol.classList.remove('hidden'); sol.innerHTML = `<strong class="text-amber-400 block mb-2">Optimal Solution (29s):</strong> 1. 1 & 3 cross (3s) &rarr; 1 returns (1s) [4s]<br> 2. 8 & 12 cross (12s) &rarr; 3 returns (3s) [19s]<br> 3. 1 & 6 cross (6s) &rarr; 1 returns (1s) [26s]<br> 4. 1 & 3 cross (3s) [Total: 29s]`; playSound(150,'sawtooth'); sendData('River', 'GiveUp', '-', false); }
 
-        /* --- GAME 5: HORSES --- */
+        /* --- GAME 5: GRAPH DELIVERY (UPDATED: THE ROYAL CRYSTAL) --- */
+        let graphState={nodes:{},edges:[],current:null,visitedEdges:new Set(),over:false,path:[]};
+        function graphInit(){
+            // "The Royal Crystal" (8 Nodes, 13 Edges)
+            // Nodes: 1(Top), 2(TL), 3(TR), 4(ML), 5(MR), 6(BL), 7(BR), 8(Bot)
+            // Odd Degree Nodes: 6 (3 conn) and 7 (3 conn). Start there.
+            // All other nodes are Degree 2 or 4 (Even).
+            
+            graphState.nodes = { 
+                1: {x:275, y:50}, 
+                2: {x:175, y:130}, 3: {x:375, y:130}, 
+                4: {x:175, y:230}, 5: {x:375, y:230}, 
+                6: {x:175, y:330}, 7: {x:375, y:330}, 
+                8: {x:275, y:410}
+            };
+            
+            // Normalize Edges (u < v)
+            graphState.edges = [
+                // Top Pyramid
+                {u:1,v:2}, {u:1,v:3}, {u:2,v:3}, 
+                // Mid Crosses
+                {u:2,v:4}, {u:2,v:5}, 
+                {u:3,v:4}, {u:3,v:5}, 
+                {u:4,v:5}, 
+                // Bottom Drops
+                {u:4,v:6}, {u:5,v:7}, 
+                // Bottom Base
+                {u:6,v:7}, 
+                // Bottom Tip
+                {u:6,v:8}, {u:7,v:8}
+            ];
+            
+            graphState.current = null; graphState.visitedEdges = new Set(); graphState.over = false; graphState.path = [];
+            document.getElementById('graph-status').innerText = "Click a starting node (Yellow).";
+            document.getElementById('graph-status').className = "text-slate-300 font-mono text-lg";
+            document.getElementById('graph-left').innerText = "13";
+            document.getElementById('graph-solution').classList.add('hidden');
+            graphRender();
+        }
+        function graphClick(e) {
+            const rect = document.getElementById('graph-canvas').getBoundingClientRect();
+            const scaleX = document.getElementById('graph-canvas').width / rect.width;
+            const scaleY = document.getElementById('graph-canvas').height / rect.height;
+            const x = (e.clientX - rect.left) * scaleX;
+            const y = (e.clientY - rect.top) * scaleY;
+            
+            let clickedNode = null;
+            for(let id in graphState.nodes) { const n = graphState.nodes[id]; if(Math.sqrt((x-n.x)**2 + (y-n.y)**2) < 30) clickedNode = parseInt(id); }
+            
+            if(clickedNode !== null) {
+                // START
+                if(graphState.current === null) {
+                    graphState.current = clickedNode; graphState.path.push(clickedNode); playSound(200);
+                } 
+                // UNDO: Clicking the previou node
+                else if (graphState.path.length > 1 && clickedNode === graphState.path[graphState.path.length - 2]) {
+                    const u = Math.min(graphState.current, clickedNode);
+                    const v = Math.max(graphState.current, clickedNode);
+                    const edgeIdx = graphState.edges.findIndex(e => e.u===u && e.v===v);
+                    if(edgeIdx > -1 && graphState.visitedEdges.has(edgeIdx)) {
+                         graphState.visitedEdges.delete(edgeIdx);
+                         graphState.path.pop(); 
+                         graphState.current = clickedNode; 
+                         graphState.over = false; 
+                         const left = 13 - graphState.visitedEdges.size;
+                         document.getElementById('graph-left').innerText = left;
+                         document.getElementById('graph-status').innerText = "Backtracked.";
+                         document.getElementById('graph-status').className = "text-slate-300 font-mono text-lg";
+                         playSound(150, 'sine');
+                    }
+                }
+                // MOVE FORWARD
+                else if (!graphState.over) {
+                    const u = Math.min(graphState.current, clickedNode); const v = Math.max(graphState.current, clickedNode);
+                    const edgeIdx = graphState.edges.findIndex(e => e.u===u && e.v===v);
+                    if(edgeIdx > -1 && !graphState.visitedEdges.has(edgeIdx)) {
+                        graphState.visitedEdges.add(edgeIdx); graphState.current = clickedNode; graphState.path.push(clickedNode); playSound(100, 'triangle');
+                        const left = 13 - graphState.visitedEdges.size; document.getElementById('graph-left').innerText = left;
+                        if(left === 0) { graphState.over = true; document.getElementById('graph-status').innerText = "VICTORY! Route Optimised."; document.getElementById('graph-status').className = "text-emerald-400 font-bold text-xl"; playSound(600); sendData('Delivery', 'Win', '-', true); }
+                        else {
+                            const hasMoves = graphState.edges.some((e, i) => !graphState.visitedEdges.has(i) && (e.u===graphState.current || e.v===graphState.current));
+                            if(!hasMoves) { graphState.over = true; document.getElementById('graph-status').innerText = "STUCK! No unvisited streets."; document.getElementById('graph-status').className = "text-rose-400 font-bold"; playSound(150, 'sawtooth'); sendData('Delivery', 'Fail', `Left ${left}`, false); }
+                        }
+                    }
+                }
+                graphRender();
+            }
+        }
+        function graphRender() {
+            const cvs = document.getElementById('graph-canvas'); const ctx = cvs.getContext('2d'); ctx.clearRect(0,0,cvs.width,cvs.height);
+            ctx.lineWidth = 5;
+            graphState.edges.forEach((e, i) => {
+                const n1 = graphState.nodes[e.u]; const n2 = graphState.nodes[e.v];
+                ctx.beginPath(); ctx.moveTo(n1.x, n1.y); ctx.lineTo(n2.x, n2.y);
+                ctx.strokeStyle = graphState.visitedEdges.has(i) ? '#10b981' : '#475569'; ctx.stroke();
+            });
+            for(let id in graphState.nodes) {
+                const n = graphState.nodes[id];
+                ctx.beginPath(); ctx.arc(n.x, n.y, 18, 0, 2*Math.PI);
+                ctx.fillStyle = parseInt(id)===graphState.current ? '#fbbf24' : '#3b82f6';
+                if(graphState.current === null) ctx.fillStyle = '#fbbf24';
+                if(graphState.over && document.getElementById('graph-status').innerText.includes('GAVE UP') && (parseInt(id)===6 || parseInt(id)===7)) { ctx.strokeStyle = '#34d399'; ctx.lineWidth = 4; ctx.stroke(); }
+                ctx.fill(); ctx.fillStyle = 'white'; ctx.font = '16px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(id, n.x, n.y);
+            }
+        }
+        function graphGiveUp() {
+            if(graphState.over) return;
+            graphState.over = true;
+            document.getElementById('graph-status').innerText = "GAVE UP. Valid Starts: Nodes 6 or 7 (Odd Degree).";
+            document.getElementById('graph-status').className = "text-rose-400 font-bold";
+            playSound(150, 'sawtooth');
+            sendData('Delivery', 'GiveUp', '-', false);
+            const sol = document.getElementById('graph-solution');
+            sol.classList.remove('hidden');
+            sol.innerHTML = `<strong class="text-amber-400">Valid Path:</strong> 6 -> 4 -> 5 -> 7 -> 6 -> 8 -> 7 -> 5 -> 3 -> 4 -> 2 -> 5 -> 2 -> 1 -> 3`;
+            graphRender();
+        }
+        document.getElementById('graph-canvas').addEventListener('mousedown', graphClick);
+
+        /* --- GAME 6: BALLS --- */
+        // (Preserved Logic)
+        const ballsState={available:[],left:[],right:[],limit:3,cf:null,weighing:false,over:false};function ballsInit(){ballsState.available=Array.from({length:12},(_,i)=>({id:i+1}));ballsState.left=[];ballsState.right=[];ballsState.limit=3;ballsState.weighing=false;ballsState.over=false;ballsState.cf={id:Math.floor(Math.random()*12)+1,status:Math.random()>0.5?'Heavy':'Light'};document.getElementById('balls-logs').innerHTML='';document.getElementById('balls-result-box').className="scale-result bg-slate-700 text-center p-3 rounded-lg font-bold text-slate-200 mb-4 border border-slate-600";document.getElementById('balls-result-box').innerText="Place equal balls to weigh.";document.getElementById('balls-guess-id').innerHTML='<option value="">Ball #</option>'+Array.from({length:12},(_,i)=>`<option value="${i+1}">${i+1}</option>`).join('');document.getElementById('balls-guess-status').value="";ballsRender()}function ballsMove(id){if(ballsState.weighing||ballsState.over)return;let p=ballsState.available,l=ballsState.left,r=ballsState.right;let idx=p.findIndex(b=>b.id===id);if(idx>-1){l.push(p.splice(idx,1)[0]);playSound(200);ballsRender();return}idx=l.findIndex(b=>b.id===id);if(idx>-1){r.push(l.splice(idx,1)[0]);playSound(200);ballsRender();return}idx=r.findIndex(b=>b.id===id);if(idx>-1){p.push(r.splice(idx,1)[0]);playSound(200);ballsRender();return}}function ballsRender(){const d=(arr,el)=>{el.innerHTML=arr.sort((a,b)=>a.id-b.id).map(b=>`<div class="ball" onclick="ballsMove(${b.id})">${b.id}</div>`).join('')};d(ballsState.available,document.getElementById('balls-pool'));d(ballsState.left,document.getElementById('balls-pan-left'));d(ballsState.right,document.getElementById('balls-pan-right'));document.getElementById('balls-left-count').innerText=ballsState.left.length;document.getElementById('balls-right-count').innerText=ballsState.right.length;document.getElementById('balls-weighs-left').innerText=`Left: ${ballsState.limit}`;document.getElementById('balls-btn-weigh').disabled=ballsState.limit===0||ballsState.left.length!==ballsState.right.length||ballsState.left.length===0||ballsState.weighing||ballsState.over}function ballsWeigh(){if(ballsState.limit<=0)return;ballsState.weighing=true;ballsState.limit--;ballsRender();const b=document.getElementById('balls-result-box');b.className="scale-result bg-indigo-900 text-indigo-200 p-3 rounded-lg font-bold border border-indigo-500";b.innerText="Weighing...";let li=ballsState.left.map(x=>x.id),ri=ballsState.right.map(x=>x.id);let res="Balanced",cls="";if(li.includes(ballsState.cf.id))res=ballsState.cf.status==="Heavy"?"Left Heavy":"Right Heavy";else if(ri.includes(ballsState.cf.id))res=ballsState.cf.status==="Heavy"?"Right Heavy":"Left Heavy";if(res.includes("Left"))cls="left-heavy bg-rose-900/50 text-rose-200 border-rose-500";else if(res.includes("Right"))cls="right-heavy bg-rose-900/50 text-rose-200 border-rose-500";else cls="bg-emerald-900/50 text-emerald-200 border-emerald-500";setTimeout(()=>{b.className=`scale-result p-3 rounded-lg font-bold border-2 ${cls}`;b.innerText=res.toUpperCase();playSound(res==="Balanced"?400:200,res==="Balanced"?'sine':'sawtooth');ballsLog(li,ri,res)},800);setTimeout(()=>{ballsState.available.push(...ballsState.left,...ballsState.right);ballsState.left=[];ballsState.right=[];ballsState.weighing=false;ballsRender();b.className="scale-result bg-slate-700 text-center p-3 rounded-lg font-bold text-slate-200 mb-4 border border-slate-600";b.innerText="Place equal balls to weigh."},3500)}function ballsLog(l,r,res){const d=document.createElement('div');d.className="p-3 mb-2 rounded bg-slate-800 border-l-4 "+(res.includes("Balanced")?"border-emerald-500":"border-rose-500");d.innerHTML=`<div class="flex justify-between font-bold text-xs text-slate-400"><span>Weighing ${3-ballsState.limit}</span><span>${res}</span></div><div class="text-sm text-slate-200 mt-1">L:[${l}] vs R:[${r}]</div>`;document.getElementById('balls-logs').prepend(d)}function ballsCheck(){const i=parseInt(document.getElementById('balls-guess-id').value);const s=document.getElementById('balls-guess-status').value;if(!i||!s)return alert("Pick Ball & Status");ballsState.over=true;ballsRender();const w=(i===ballsState.cf.id&&s===ballsState.cf.status);const b=document.getElementById('balls-result-box');b.className=w?"scale-result bg-emerald-600 text-white p-4 rounded-xl font-bold text-xl":"scale-result bg-red-600 text-white p-4 rounded-xl font-bold text-xl";b.innerHTML=w?"VICTORY!":"WRONG.";playSound(w?600:100,w?'sine':'sawtooth');sendData('12 Balls', w?'Win':'Fail', '-', true);}
+        function ballsGiveUp(){ballsState.over=true;ballsRender();const b=document.getElementById('balls-result-box');b.className="scale-result bg-slate-600 text-white p-4 rounded-xl font-bold";b.innerHTML=`Gave Up. Counterfeit: Ball ${ballsState.cf.id} (${ballsState.cf.status})`;sendData('12 Balls', 'GiveUp', '-', false);}
+
+        /* --- GAME 7: HORSES (CLICK MOVE) --- */
         let horseState={pool:[],track:[],races:0,speeds:{}};function horseInit(){horseState.pool=Array.from({length:25},(_,i)=>i+1);horseState.track=[];horseState.races=0;const s=Array.from({length:25},(_,i)=>i+1);for(let i=s.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[s[i],s[j]]=[s[j],s[i]]}horseState.speeds={};for(let i=1;i<=25;i++)horseState.speeds[i]=s[i-1];document.getElementById('horse-logs').innerHTML='<p class="text-slate-600 italic text-center mt-10">No races yet.</p>';document.getElementById('horse-race-count').innerText='Races: 0';document.getElementById('horse-final-msg').innerText='';['h-pred-1','h-pred-2','h-pred-3'].forEach(id=>document.getElementById(id).value='');horseRenderGridStructure();horseRender()}function horseRenderGridStructure(){const g=document.getElementById('horse-grid');g.innerHTML='';['A','B','C','D','E'].forEach(row=>{let html=`<div class="grid grid-cols-6 gap-1"><div class="flex items-center justify-center font-bold text-slate-500 text-xs">${row}</div>`;for(let i=0;i<5;i++)html+=`<div id="grid-${row}-${i}" class="grid-slot" ondrop="horseDrop(event, 'grid-${row}-${i}')" ondragover="allowDrop(event)"></div>`;html+='</div>';g.innerHTML+=html})}function allowDrop(ev){ev.preventDefault()}function horseDrag(ev,id){ev.dataTransfer.setData("text",id)}function horseDrop(ev,targetId){ev.preventDefault();const id=parseInt(ev.dataTransfer.getData("text"));if(!id)return;const poolIdx=horseState.pool.indexOf(id);if(poolIdx>-1)horseState.pool.splice(poolIdx,1);const trackIdx=horseState.track.indexOf(id);if(trackIdx>-1)horseState.track.splice(trackIdx,1);document.querySelectorAll('.horse-in-grid').forEach(el=>{if(parseInt(el.innerText)===id)el.remove()});if(targetId==='pool')horseState.pool.push(id);else if(targetId==='track'){if(horseState.track.length<5)horseState.track.push(id);else horseState.pool.push(id)}else if(targetId.startsWith('grid-')){const slot=document.getElementById(targetId);if(slot.children.length>0)horseState.pool.push(parseInt(slot.children[0].innerText));horseRender();const hDiv=document.createElement('div');hDiv.className="horse horse-in-grid";hDiv.draggable=true;hDiv.innerText=id;hDiv.ondragstart=(e)=>horseDrag(e,id);hDiv.onclick=()=>horseReturnFromGrid(id);slot.innerHTML='';slot.appendChild(hDiv);return}horseRender()}
         
         function horseReturnFromGrid(id) {
-            // Remove from grid DOM
             document.querySelectorAll('.horse-in-grid').forEach(el => { if (parseInt(el.innerText) === id) el.remove(); });
-            // Add back to pool state
             horseState.pool.push(id);
             playSound(200);
             horseRender();
         }
-
         function horseToggleTrack(id){const poolIdx=horseState.pool.indexOf(id);if(poolIdx>-1){if(horseState.track.length<5){horseState.pool.splice(poolIdx,1);horseState.track.push(id);playSound(200)}else alert("Track Full")}else{const trackIdx=horseState.track.indexOf(id);if(trackIdx>-1){horseState.track.splice(trackIdx,1);horseState.pool.push(id);playSound(200)}}horseRender()}function horseRender(){const pool=document.getElementById('horse-pool');pool.innerHTML='';horseState.pool.sort((a,b)=>a-b).forEach(h=>{pool.innerHTML+=`<div class="horse" draggable="true" ondragstart="horseDrag(event, ${h})" onclick="horseToggleTrack(${h})">${h}</div>`});const track=document.getElementById('horse-track');track.innerHTML='';for(let i=0;i<5;i++){if(i<horseState.track.length){let h=horseState.track[i];track.innerHTML+=`<div class="track-slot filled"><div class="horse" draggable="true" ondragstart="horseDrag(event, ${h})" onclick="horseToggleTrack(${h})">${h}</div></div>`}else{track.innerHTML+=`<div class="track-slot"></div>`}}document.getElementById('horse-btn-race').disabled=horseState.track.length<2}function horseRace(){if(horseState.track.length<2)return;horseState.races++;document.getElementById('horse-race-count').innerText=`Races: ${horseState.races}`;const racers=[...horseState.track];racers.sort((a,b)=>horseState.speeds[a]-horseState.speeds[b]);const l=document.getElementById('horse-logs');l.innerHTML=`<div class="bg-slate-800 p-2 rounded mb-2 border-l-4 border-pink-500"><div class="text-pink-400 font-bold text-xs mb-1">Race #${horseState.races}</div><div class="flex flex-wrap gap-2 text-xs text-white">${racers.map((h,i)=>`<span class="${i===0?'text-emerald-400 font-bold':''}">${i+1}. #${h}</span>`).join('<span class="text-slate-500 mx-1">></span>')}</div></div>`+l.innerHTML;playSound(400,'triangle');horseState.pool.push(...horseState.track);horseState.track=[];horseRender()}
         
         function horseCheck(){
             const p1=parseInt(document.getElementById('h-pred-1').value),p2=parseInt(document.getElementById('h-pred-2').value),p3=parseInt(document.getElementById('h-pred-3').value);if(!p1||!p2||!p3)return alert("Pick 3");const all=[];for(let i=1;i<=25;i++)all.push({id:i,s:horseState.speeds[i]});all.sort((a,b)=>a.s-b.s);const msg=document.getElementById('horse-final-msg');
             if(p1===all[0].id&&p2===all[1].id&&p3===all[2].id){
                 if (horseState.races <= 7) {
-                    msg.className="text-emerald-400 mt-2";msg.innerText=`PERFECT! Top 3 found in ${horseState.races} races (Optimal).`;playSound(800);
+                    msg.className="text-emerald-400 mt-2";msg.innerText=`PERFECT! Top 3 found in ${horseState.races} races (Optimised).`;playSound(800);
+                    sendData('25 Horses', 'Win', horseState.races, true);
                 } else {
                     msg.className="text-yellow-400 mt-2";msg.innerText=`Correct horses, but inefficient (${horseState.races} races). Can you do it in 7?`;playSound(600);
+                    sendData('25 Horses', 'Win', horseState.races, false);
                 }
-            } else { msg.className="text-rose-400 mt-2";msg.innerText=`WRONG. Top 3 were: #${all[0].id}, #${all[1].id}, #${all[2].id}.`;playSound(150,'sawtooth');}
+            } else { msg.className="text-rose-400 mt-2";msg.innerText=`WRONG.`;playSound(150,'sawtooth'); sendData('25 Horses', 'Fail', '-', false);}
         }
         function horseGiveUp(){
             const all=[]; for(let i=1;i<=25;i++)all.push({id:i,s:horseState.speeds[i]});
@@ -372,11 +593,14 @@
             msg.className="text-slate-400 mt-2";
             msg.innerText = `GAVE UP. Top 3: #${all[0].id}, #${all[1].id}, #${all[2].id}.`;
             playSound(150,'sawtooth');
+            sendData('25 Horses', 'GiveUp', '-', false);
         }
 
         // --- START ---
-        jugInit(); bulbInit(); catInit(); ballsInit(); horseInit();
+        document.addEventListener('DOMContentLoaded', () => {
+            updateAuthUI();
+            jugInit(); bulbInit(); catInit(); riverInit(); graphInit(); ballsInit(); horseInit();
+        });
     </script>
 </body>
-
 </html>
