@@ -508,30 +508,34 @@
 
        // Data Logic
         function sendData(game, result, details, optimal) {
-            console.log(`Sending Data: ${game} | ${result} | ${details} | Optimal: ${optimal}`);
+            // Calculate duration based on the global startTime
+            // We use the global 'startTime' variable set by startTimer()
+            const currentDuration = Math.floor((Date.now() - startTime) / 1000);
+
+            console.log(`Sending: ${game} | ${result} | Metric: ${details} | Time: ${currentDuration}s`);
             
             const payload = {
                 user: currentUser || "Guest",
-                game: game,
-                result: result,
-                details: details,
-                optimal: optimal
+                game: game,       // This maps to Puzzle_Name
+                result: result,   // This maps to Result
+                details: details, // This maps to Metric
+                optimal: optimal, // This maps to Is_Optimal
+                duration: currentDuration // This maps to Duration_Sec
             };
 
-            // We use 'no-cors' to send data to Google Scripts without browser security blocking it.
-            // Note: We won't get a 'success' response back readable in JS, but the data WILL hit the sheet.
             fetch(apiUrl, {
                 method: "POST",
-                mode: "no-cors", 
+                mode: "no-cors", // Important for Google Scripts
                 headers: {
                     "Content-Type": "text/plain;charset=utf-8"
                 },
                 body: JSON.stringify(payload)
             }).then(() => {
-                console.log("Request sent to Sheet.");
+                console.log("Data sent to Sheet.");
             }).catch(err => {
                 console.error("Failed to send data:", err);
             });
+        }
         }
         // --- PROGRESSION SYSTEM ---
         const puzzleNames = {
@@ -1235,3 +1239,4 @@
     </script>
 </body>
 </html>
+
