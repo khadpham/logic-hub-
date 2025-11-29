@@ -766,7 +766,7 @@
                     // Optimal = 29s
                     const isOptimal = (riverState.time <= 29); 
                     const msg = document.getElementById('river-status'); 
-                    msg.innerText = `VICTORY! Solved in ${riverState.time}s (Optimal is 26s).`; 
+                    msg.innerText = `VICTORY! Solved in ${riverState.time}s (Optimal).`; 
                     msg.className = "text-emerald-400 font-bold text-xl animate-bounce"; 
                     playSound(600); 
                     sendData('River', 'Win', riverState.time, isOptimal); 
