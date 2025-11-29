@@ -260,7 +260,7 @@
                     <div class="flex justify-between items-start mb-6 border-b border-slate-700 pb-4">
                         <div>
                             <h2 class="flex items-center text-3xl font-bold text-white mb-2"><span class="text-4xl mr-3">🐎</span><span class="bg-clip-text text-transparent bg-gradient-to-r from-pink-400 to-rose-300">The 25 Horses Race</span></h2>
-                            <p class="text-slate-300 mt-2 text-sm leading-relaxed"><strong>Goal:</strong> Find the Top 3 fastest horses in minimum races.<br><strong>Rules:</strong> Max 5 horses per race. You only see <strong>relative order</strong> (1st, 2nd...), no stopwatch.<br><strong>Control:</strong> <strong class="text-white">Click</strong> a horse to move it between the Stable and the Track. <strong class="text-white">Drag</strong> to move it to the Strategy Board.</p>
+                            <p class="text-slate-300 mt-2 text-sm leading-relaxed"><strong>Goal:</strong> Find the Top 3 fastest horses in minimum races.<br><strong>Rules:</strong> Max 5 horses per race. You only see <strong>relative order</strong> (1st, 2nd...), no stopwatch.<br><strong>Control:</strong> <strong class="text-white">Click</strong> a horse to move it between the Stable and the Track. Drag to move it to the Strategy Board.</p>
                         </div>
                         <div class="flex space-x-2"><button onclick="horseInit()" class="px-3 py-1 bg-indigo-600 text-white rounded font-bold text-sm">Reset</button><button onclick="openModal('modal-horses')" class="px-3 py-1 bg-amber-600 text-white rounded font-bold text-sm">Hint</button><button onclick="openModal('modal-math-horses')" class="px-3 py-1 bg-slate-700 text-slate-300 rounded font-bold text-sm">📖</button></div>
                     </div>
@@ -759,12 +759,12 @@
         }
         function riverRender(){ const l=document.getElementById('river-bank-left'); const r=document.getElementById('river-bank-right'); const b=document.getElementById('river-boat'); const draw = (arr, el, loc) => { el.innerHTML = arr.sort((a,b)=>a-b).map(p => `<div onclick="riverClick(${p}, '${loc}')" class="person"><span class="text-2xl">👤</span><span class="person-time">${p}s</span></div>`).join(''); }; draw(riverState.left, l, 'left'); draw(riverState.right, r, 'right'); draw(riverState.boat, b, 'boat'); b.style.left = riverState.side === 'left' ? '35%' : 'calc(100% - 35% - 140px)'; }
         function riverCheck(){ 
-            // WIN CONDITION: Left side is empty
-            if(riverState.left.length === 0) { 
+            // WIN CONDITION: Right side is at least 4
+            if(riverState.right.length === 4) { 
                 if(riverState.time <= 30) { 
                     riverState.solved = true; 
-                    // Optimal = 26s
-                    const isOptimal = (riverState.time <= 26); 
+                    // Optimal = 29s
+                    const isOptimal = (riverState.time <= 29); 
                     const msg = document.getElementById('river-status'); 
                     msg.innerText = `VICTORY! Solved in ${riverState.time}s (Optimal is 26s).`; 
                     msg.className = "text-emerald-400 font-bold text-xl animate-bounce"; 
@@ -1189,4 +1189,3 @@
     </script>
 </body>
 </html>
-
